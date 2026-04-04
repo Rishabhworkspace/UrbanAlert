@@ -2,60 +2,112 @@ const express = require('express');
 const router = express.Router();
 const Issue = require('../models/Issue');
 const auth = require('../middleware/auth');
-const { upload } = require('../utils/cloudinary');
+const { upload, uploadToCloudinary } = require('../utils/cloudinary');
 const { analyzeIssueWithAI } = require('../utils/ai');
+
+// Helper: wrap multer middleware so errors are caught in the handler, not globally
+const handleFileUpload = (req, res) => {
+  return new Promise((resolve, reject) => {
+    upload.single('photo')(req, res, (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+};
 
 // POST /api/issues
 // Create an issue (Citizen only)
-router.post('/', auth, upload.single('photo'), async (req, res) => {
+router.post('/', auth, async (req, res) => {
   try {
+    // Step 1: Process file upload via multer (memory storage)
+    try {
+      await handleFileUpload(req, res);
+    } catch (uploadErr) {
+      console.error('Multer file processing error:', uploadErr);
+      if (uploadErr.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'File too large. Maximum size is 5MB.' });
+      }
+      if (uploadErr.message === 'Only image files are allowed') {
+        return res.status(400).json({ message: uploadErr.message });
+      }
+      return res.status(400).json({ message: 'File upload failed: ' + uploadErr.message });
+    }
+
+    // Step 2: Role check
     if (req.user.role !== 'citizen') {
       return res.status(403).json({ message: 'Only citizens can report issues' });
     }
 
+    // Step 3: Extract and validate fields
     const { title, description, category, latitude, longitude, address } = req.body;
     
     if (!title || !description || !category) {
-      return res.status(400).json({ message: 'Required fields missing' });
+      return res.status(400).json({ message: 'Title, description, and category are required' });
     }
 
-    // Prepare location object if GPS data provided
-    let location = undefined;
-    if (latitude && longitude) {
-      location = {
-        type: 'Point',
-        coordinates: [parseFloat(longitude), parseFloat(latitude)]
-      };
+    // Step 4: Upload photo to Cloudinary if file was provided
+    let photoUrl = null;
+    if (req.file) {
+      try {
+        console.log('Uploading photo to Cloudinary...');
+        const cloudResult = await uploadToCloudinary(req.file.buffer);
+        photoUrl = cloudResult.secure_url;
+        console.log('Photo uploaded successfully:', photoUrl);
+      } catch (cloudErr) {
+        console.error('Cloudinary upload failed (continuing without photo):', cloudErr.message);
+        // Don't fail the entire submission — save the issue without the photo
+      }
     }
 
-    // Call Groq AI to analyze issue
-    const aiAnalysis = await analyzeIssueWithAI(title, description, category);
+    // Step 5: Run AI analysis (non-blocking — fallback on failure)
+    let aiAnalysis = { suggestedPriority: 'medium', autoTags: [], confidenceScore: 0.5 };
+    try {
+      console.log('Running AI analysis...');
+      aiAnalysis = await analyzeIssueWithAI(title, description, category);
+      console.log('AI analysis complete:', JSON.stringify(aiAnalysis));
+    } catch (aiErr) {
+      console.error('AI analysis failed (using defaults):', aiErr.message);
+    }
 
-    const issue = new Issue({
+    // Step 6: Build issue document
+    const issueData = {
       title,
       description,
       category,
-      location,
-      address,
+      address: address || '',
       reportedBy: req.user.id,
-      photoUrl: req.file ? req.file.path : null,
+      photoUrl,
       aiAnalysis,
-      // Set initial priority from AI suggestion
       priority: aiAnalysis.suggestedPriority || 'medium',
-      // Record initial status in history
       statusHistory: [{
         status: 'reported',
         changedBy: req.user.id,
         changedAt: new Date(),
         note: 'Issue reported by citizen'
       }]
-    });
+    };
 
+    // Only set location if GPS coordinates are provided
+    if (latitude && longitude) {
+      const lat = parseFloat(latitude);
+      const lng = parseFloat(longitude);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        issueData.location = {
+          type: 'Point',
+          coordinates: [lng, lat]
+        };
+      }
+    }
+
+    // Step 7: Save to MongoDB
+    const issue = new Issue(issueData);
     await issue.save();
+    console.log('Issue saved successfully:', issue._id);
+
     res.status(201).json(issue);
   } catch (err) {
     console.error('Error creating issue:', err);
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: 'Failed to create issue: ' + (err.message || 'Unknown error') });
   }
 });
 
@@ -119,7 +171,7 @@ router.get('/my-reports', auth, async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(issues);
   } catch (err) {
-    console.error(err.message);
+    console.error('My reports error:', err.message);
     res.status(500).json({ message: 'Server Error' });
   }
 });
@@ -139,7 +191,7 @@ router.get('/all', auth, async (req, res) => {
     
     res.json(issues);
   } catch (err) {
-    console.error(err.message);
+    console.error('All issues error:', err.message);
     res.status(500).json({ message: 'Server Error' });
   }
 });
@@ -164,7 +216,7 @@ router.get('/:id', auth, async (req, res) => {
 
     res.json(issue);
   } catch (err) {
-    console.error(err.message);
+    console.error('Get issue error:', err.message);
     if (err.kind === 'ObjectId') {
       return res.status(404).json({ message: 'Issue not found' });
     }
@@ -232,7 +284,7 @@ router.patch('/:id/status', auth, async (req, res) => {
 
     res.json(updatedIssue);
   } catch (err) {
-    console.error(err.message);
+    console.error('Update status error:', err.message);
     res.status(500).json({ message: 'Server Error' });
   }
 });
@@ -262,7 +314,7 @@ router.patch('/:id/upvote', auth, async (req, res) => {
 
     res.json({ upvotes: issue.upvotes, upvotedBy: issue.upvotedBy });
   } catch (err) {
-    console.error(err.message);
+    console.error('Upvote error:', err.message);
     res.status(500).json({ message: 'Server Error' });
   }
 });
@@ -282,7 +334,7 @@ router.delete('/:id', auth, async (req, res) => {
 
     res.json({ message: 'Issue deleted successfully' });
   } catch (err) {
-    console.error(err.message);
+    console.error('Delete error:', err.message);
     res.status(500).json({ message: 'Server Error' });
   }
 });

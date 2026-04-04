@@ -15,9 +15,11 @@ const issueSchema = new mongoose.Schema({
     default: 'medium' 
   },
   photoUrl: { type: String }, // Cloudinary URL
+  // Location is only set when GPS coordinates are available
+  // No defaults — prevents empty subdocuments that break 2dsphere index
   location: {
-    type: { type: String, enum: ['Point'], default: 'Point' },
-    coordinates: { type: [Number], required: false } // [longitude, latitude]
+    type: { type: String, enum: ['Point'] },
+    coordinates: { type: [Number] }
   },
   address: { type: String },
   upvotes: { type: Number, default: 0 },
@@ -44,7 +46,7 @@ const issueSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
-// Geospatial index for location-based queries
+// Geospatial index — only for documents that actually have coordinates
 issueSchema.index({ location: '2dsphere' });
 // Compound indexes for efficient dashboard queries
 issueSchema.index({ status: 1, createdAt: -1 });
