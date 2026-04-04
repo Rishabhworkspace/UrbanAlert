@@ -131,4 +131,31 @@ router.post('/create-gov', async (req, res) => {
   }
 });
 
+// PATCH /api/auth/update-profile
+router.patch('/update-profile', auth, async (req, res) => {
+  try {
+    if (req.user.role !== 'citizen') {
+      return res.status(403).json({ message: 'Only citizens can update this profile' });
+    }
+
+    const { name } = req.body;
+    if (!name || name.trim() === '') {
+      return res.status(400).json({ message: 'Name cannot be empty' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.name = name.trim();
+    await user.save();
+
+    res.json({ id: user.id, name: user.name, email: user.email, role: user.role });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+});
+
 module.exports = router;

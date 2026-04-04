@@ -1,8 +1,17 @@
 const Groq = require('groq-sdk');
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY
-});
+let groqInstance = null;
+const getGroqClient = () => {
+  if (!groqInstance) {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error("GROQ_API_KEY is missing in environment variables");
+    }
+    groqInstance = new Groq({
+      apiKey: process.env.GROQ_API_KEY
+    });
+  }
+  return groqInstance;
+};
 
 /**
  * Analyzes an issue description to determine severity priority and relevant tags.
@@ -27,7 +36,7 @@ const analyzeIssueWithAI = async (title, description, category) => {
     }
     `;
 
-    const chatCompletion = await groq.chat.completions.create({
+    const chatCompletion = await getGroqClient().chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
       model: 'llama3-8b-8192',
       temperature: 0.1, // Low temp for more consistent JSON structure

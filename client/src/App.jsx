@@ -14,8 +14,7 @@ import ReportIssue from './pages/ReportIssue';
 import MyReports from './pages/MyReports';
 import IssueDetail from './pages/IssueDetail';
 
-// Placeholder Pages (will implement next)
-const CitizenProfile = () => <div>Citizen Profile Placeholder</div>;
+import CitizenProfile from './pages/CitizenProfile';
 import GovDashboard from './pages/GovDashboard';
 import GovIssueDetail from './pages/GovIssueDetail';
 const LiveMap = () => <div>Live Map Placeholder</div>;
