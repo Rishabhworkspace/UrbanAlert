@@ -17,9 +17,9 @@ import IssueDetail from './pages/IssueDetail';
 import CitizenProfile from './pages/CitizenProfile';
 import GovDashboard from './pages/GovDashboard';
 import GovIssueDetail from './pages/GovIssueDetail';
-const LiveMap = () => <div>Live Map Placeholder</div>;
-const Analytics = () => <div>Analytics Placeholder</div>;
-const GovProfile = () => <div>Gov Profile Placeholder</div>;
+import GovProfile from './pages/GovProfile';
+import GovMap from './pages/GovMap';
+import GovAnalytics from './pages/GovAnalytics';
 const NotFound = () => (
   <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem', textAlign: 'center' }}>
     <h1 style={{ fontSize: '4rem', fontWeight: 800, color: '#0F2D54', opacity: 0.2 }}>404</h1>
@@ -49,8 +49,8 @@ function App() {
             
             <Route path="/gov/dashboard" element={<ProtectedRoute role="government"><GovDashboard /></ProtectedRoute>} />
             <Route path="/gov/issues/:id" element={<ProtectedRoute role="government"><GovIssueDetail /></ProtectedRoute>} />
-            <Route path="/gov/map" element={<ProtectedRoute role="government"><LiveMap /></ProtectedRoute>} />
-            <Route path="/gov/analytics" element={<ProtectedRoute role="government"><Analytics /></ProtectedRoute>} />
+            <Route path="/gov/map" element={<ProtectedRoute role="government"><GovMap /></ProtectedRoute>} />
+            <Route path="/gov/analytics" element={<ProtectedRoute role="government"><GovAnalytics /></ProtectedRoute>} />
             <Route path="/gov/profile" element={<ProtectedRoute role="government"><GovProfile /></ProtectedRoute>} />
             
             <Route path="*" element={<NotFound />} />
