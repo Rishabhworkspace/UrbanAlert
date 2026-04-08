@@ -36,12 +36,12 @@ const IssueMap = ({ lat, lng, className = "h-64 w-full rounded-lg z-0 relative" 
   }
 
   return (
-    <div className={className}>
+    <div className={`${className} relative`}>
       <MapContainer 
         center={[lat, lng]} 
         zoom={16} 
         scrollWheelZoom={false}
-        className="h-full w-full rounded-lg z-0 absolute inset-0"
+        className="h-full w-full rounded-lg z-0"
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
