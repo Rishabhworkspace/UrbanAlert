@@ -20,14 +20,7 @@ import GovIssueDetail from './pages/GovIssueDetail';
 import GovProfile from './pages/GovProfile';
 import GovMap from './pages/GovMap';
 import GovAnalytics from './pages/GovAnalytics';
-const NotFound = () => (
-  <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem', textAlign: 'center' }}>
-    <h1 style={{ fontSize: '4rem', fontWeight: 800, color: '#0F2D54', opacity: 0.2 }}>404</h1>
-    <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0F2D54', marginTop: '1rem' }}>Page Not Found</h2>
-    <p style={{ color: '#64748b', marginTop: '0.5rem' }}>The page you're looking for doesn't exist or has been moved.</p>
-    <a href="/" style={{ marginTop: '1.5rem', padding: '0.5rem 1.5rem', background: '#1B4F8A', color: 'white', borderRadius: '0.5rem', textDecoration: 'none', fontWeight: 600 }}>Go Home</a>
-  </div>
-);
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
