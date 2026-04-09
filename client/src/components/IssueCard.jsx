@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MapPin, Clock, ArrowUp, CheckCircle, AlertTriangle, AlertCircle, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const getStatusColor = (status) => {
   switch(status) {
@@ -38,9 +39,34 @@ const getRelativeTime = (dateString) => {
 };
 
 const IssueCard = ({ issue, isGov = false }) => {
+  const { user } = useAuth();
+  const [showVoters, setShowVoters] = useState(false);
+  const popupRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setShowVoters(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const photoUrl = issue.photoUrl || 'https://placehold.co/600x400/f8fafc/94a3b8?text=No+Photo';
   const statusStr = issue.status ? issue.status.replace('_', ' ').toUpperCase() : 'REPORTED';
   const priority = issue.priority || issue.aiAnalysis?.suggestedPriority || 'medium';
+
+  const repName = issue.reportedBy?.name || 'Anonymous';
+  const upvoterNames = (issue.upvotedBy || [])
+    .map(u => u.name || 'Anonymous')
+    .filter(n => n !== repName);
+  
+  const allReporters = [...new Set([repName, ...upvoterNames])];
+
+  // If the logged-in user is one of the reporters, prioritize showing their name
+  const isUserReporter = user?.name && allReporters.includes(user.name);
+  const displayReporterName = isUserReporter ? user.name : repName;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all group flex flex-col h-full">
@@ -95,15 +121,39 @@ const IssueCard = ({ issue, isGov = false }) => {
             </span>
           </div>
           
+          <div className="text-xs text-slate-500 mb-3 border-b border-slate-50 pb-2">
+            Reported by: <span className="font-medium text-slate-700">{displayReporterName}</span>
+          </div>
+
           <div className="flex items-center justify-between text-xs text-slate-500">
             <div className="flex items-center">
               <Clock className="w-4 h-4 mr-1.5 text-slate-400" />
               <span>{getRelativeTime(issue.createdAt || new Date())}</span>
             </div>
             
-            <div className="flex items-center text-brand-blue font-medium bg-brand-pale px-2 py-0.5 rounded-full border border-brand-blue/20">
-              <ArrowUp className="w-3 h-3 mr-1" />
-              {issue.upvotes || 0}
+            <div className="relative" ref={popupRef}>
+              <button 
+                onClick={(e) => { e.preventDefault(); setShowVoters(!showVoters); }}
+                className="flex items-center text-brand-blue font-medium bg-brand-pale px-2 py-0.5 rounded-full border border-brand-blue/20 hover:bg-brand-blue/10 transition-colors"
+                title="See who reported this"
+              >
+                <ArrowUp className="w-3 h-3 mr-1" />
+                {issue.upvotes || 0}
+              </button>
+              
+              {showVoters && (
+                <div className="absolute bottom-full right-0 mb-2 w-48 bg-white border border-slate-200 shadow-xl rounded-lg p-3 z-20 text-left cursor-default">
+                  <h4 className="text-xs font-bold text-slate-800 mb-2 border-b border-slate-100 pb-1">Reported by:</h4>
+                  <ul className="text-xs text-slate-600 max-h-32 overflow-y-auto space-y-1">
+                    {allReporters.map((name, idx) => (
+                      <li key={idx} className="flex items-center">
+                        <div className="w-1.5 h-1.5 rounded-full bg-brand-blue mr-2"></div>
+                        <span className="truncate">{name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         </div>

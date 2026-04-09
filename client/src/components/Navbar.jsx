@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapPin, LogOut, User as UserIcon, LayoutDashboard, FileText, Menu, X, ClipboardList } from 'lucide-react';
+import { MapPin, LogOut, User as UserIcon, LayoutDashboard, FileText, Menu, X, ClipboardList, Users } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
 
 const Navbar = () => {
@@ -44,6 +44,9 @@ const Navbar = () => {
                   <>
                     <Link to="/report-issue" className="text-slate-600 hover:text-brand-blue font-medium px-3 py-2 rounded-md transition-colors flex items-center">
                       <FileText className="w-4 h-4 mr-1"/> Report Issue
+                    </Link>
+                    <Link to="/community-issues" className="text-slate-600 hover:text-brand-blue font-medium px-3 py-2 rounded-md transition-colors flex items-center">
+                      <Users className="w-4 h-4 mr-1"/> Community Issues
                     </Link>
                     <Link to="/my-reports" className="text-slate-600 hover:text-brand-blue font-medium px-3 py-2 rounded-md transition-colors flex items-center">
                       <ClipboardList className="w-4 h-4 mr-1"/> My Reports
@@ -91,6 +94,9 @@ const Navbar = () => {
                   <>
                     <Link to="/report-issue" onClick={() => setMobileOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-50 font-medium">
                       <FileText className="w-4 h-4 mr-2"/> Report Issue
+                    </Link>
+                    <Link to="/community-issues" onClick={() => setMobileOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-50 font-medium">
+                      <Users className="w-4 h-4 mr-2"/> Community Issues
                     </Link>
                     <Link to="/my-reports" onClick={() => setMobileOpen(false)} className="flex items-center px-3 py-2.5 rounded-lg text-slate-700 hover:bg-slate-50 font-medium">
                       <ClipboardList className="w-4 h-4 mr-2"/> My Reports

@@ -12,6 +12,7 @@ import GovLogin from './pages/GovLogin';
 
 import ReportIssue from './pages/ReportIssue';
 import MyReports from './pages/MyReports';
+import CommunityIssues from './pages/CommunityIssues';
 import IssueDetail from './pages/IssueDetail';
 
 import CitizenProfile from './pages/CitizenProfile';
@@ -37,6 +38,7 @@ function App() {
             
             <Route path="/report-issue" element={<ProtectedRoute role="citizen"><ReportIssue /></ProtectedRoute>} />
             <Route path="/my-reports" element={<ProtectedRoute role="citizen"><MyReports /></ProtectedRoute>} />
+            <Route path="/community-issues" element={<ProtectedRoute role="citizen"><CommunityIssues /></ProtectedRoute>} />
             <Route path="/issues/:id" element={<ProtectedRoute role="citizen"><IssueDetail /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute role="citizen"><CitizenProfile /></ProtectedRoute>} />
             
