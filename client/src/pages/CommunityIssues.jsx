@@ -93,10 +93,42 @@ const CommunityIssues = () => {
               <p className="text-slate-500">No reports match the selected filter.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredIssues.map((issue) => (
-                <IssueCard key={issue._id} issue={issue} />
-              ))}
+            <div className="space-y-12">
+              {/* High & Critical Priority Section */}
+              {filteredIssues.filter(i => i.priority === 'high' || i.priority === 'critical').length > 0 && (
+                <section>
+                  <h2 className="text-xl font-bold text-red-800 mb-4 border-b border-red-200 pb-2">High Priority</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredIssues.filter(i => i.priority === 'high' || i.priority === 'critical').map(issue => (
+                      <IssueCard key={issue._id} issue={issue} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Medium Priority Section */}
+              {filteredIssues.filter(i => i.priority === 'medium').length > 0 && (
+                <section>
+                  <h2 className="text-xl font-bold text-orange-800 mb-4 border-b border-orange-200 pb-2">Medium Priority</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredIssues.filter(i => i.priority === 'medium').map(issue => (
+                      <IssueCard key={issue._id} issue={issue} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Low Priority Section */}
+              {filteredIssues.filter(i => i.priority === 'low' || !i.priority).length > 0 && (
+                <section>
+                  <h2 className="text-xl font-bold text-blue-800 mb-4 border-b border-blue-200 pb-2">Low Priority</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredIssues.filter(i => i.priority === 'low' || !i.priority).map(issue => (
+                      <IssueCard key={issue._id} issue={issue} />
+                    ))}
+                  </div>
+                </section>
+              )}
             </div>
           )}
         </>

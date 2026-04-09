@@ -59,8 +59,65 @@ router.post('/', auth, async (req, res) => {
       }
     }
 
-    // Step 5: Run AI analysis (non-blocking — fallback on failure)
-    let aiAnalysis = { suggestedPriority: 'medium', autoTags: [], confidenceScore: 0.5 };
+    // Step 5: Check for duplicate issue
+    let duplicateIssue = null;
+    try {
+      if (latitude && longitude) {
+        const lat = parseFloat(latitude);
+        const lng = parseFloat(longitude);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          duplicateIssue = await Issue.findOne({
+            category,
+            status: { $ne: 'resolved' },
+            location: {
+              $near: {
+                $geometry: { type: 'Point', coordinates: [lng, lat] },
+                $maxDistance: 1000 // Increased to 1km to catch same-area reports
+              }
+            }
+          });
+        }
+      } 
+      
+      // If no geographic duplicate was found, try matching by exact title or exact address string
+      if (!duplicateIssue) {
+        // Escape special characters for regex safety
+        const safeTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const orConditions = [{ title: { $regex: new RegExp(`^${safeTitle}$`, 'i') } }];
+        
+        if (address) {
+          const safeAddress = address.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          orConditions.push({ address: { $regex: new RegExp(`^${safeAddress}$`, 'i') } });
+        }
+
+        duplicateIssue = await Issue.findOne({
+          category,
+          status: { $ne: 'resolved' },
+          $or: orConditions
+        });
+      }
+    } catch (err) {
+      console.error('Duplicate check failed:', err.message);
+    }
+
+    if (duplicateIssue) {
+      // Add vote if not already voted
+      if (!duplicateIssue.upvotedBy.includes(req.user.id)) {
+        duplicateIssue.upvotedBy.push(req.user.id);
+        duplicateIssue.upvotes = duplicateIssue.upvotedBy.length;
+        
+        // Adjust priority based on votes
+        if (duplicateIssue.upvotes >= 10) duplicateIssue.priority = 'high';
+        else if (duplicateIssue.upvotes >= 5) duplicateIssue.priority = 'medium';
+        else duplicateIssue.priority = 'low';
+
+        await duplicateIssue.save();
+      }
+      return res.status(200).json(duplicateIssue);
+    }
+
+    // Step 6: Run AI analysis (non-blocking — fallback on failure)
+    let aiAnalysis = { suggestedPriority: 'low', autoTags: [], confidenceScore: 0.5 };
     try {
       console.log('Running AI analysis...');
       aiAnalysis = await analyzeIssueWithAI(title, description, category);
@@ -69,7 +126,7 @@ router.post('/', auth, async (req, res) => {
       console.error('AI analysis failed (using defaults):', aiErr.message);
     }
 
-    // Step 6: Build issue document
+    // Step 7: Build issue document
     const issueData = {
       title,
       description,
@@ -78,7 +135,7 @@ router.post('/', auth, async (req, res) => {
       reportedBy: req.user.id,
       photoUrl,
       aiAnalysis,
-      priority: aiAnalysis.suggestedPriority || 'medium',
+      priority: aiAnalysis.suggestedPriority || 'low',
       statusHistory: [{
         status: 'reported',
         changedBy: req.user.id,
@@ -99,7 +156,7 @@ router.post('/', auth, async (req, res) => {
       }
     }
 
-    // Step 7: Save to MongoDB
+    // Step 8: Save to MongoDB
     const issue = new Issue(issueData);
     await issue.save();
     console.log('Issue saved successfully:', issue._id);
@@ -166,8 +223,15 @@ router.get('/my-reports', auth, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    const issues = await Issue.find({ reportedBy: req.user.id })
+    const issues = await Issue.find({ 
+      $or: [
+        { reportedBy: req.user.id },
+        { upvotedBy: req.user.id }
+      ]
+    })
+      .populate('reportedBy', 'name')
       .populate('assignedTo', 'name')
+      .populate('upvotedBy', 'name')
       .sort({ createdAt: -1 });
     res.json(issues);
   } catch (err) {
@@ -187,6 +251,7 @@ router.get('/all', auth, async (req, res) => {
     const issues = await Issue.find()
       .populate('reportedBy', 'name email')
       .populate('assignedTo', 'name email')
+      .populate('upvotedBy', 'name email')
       .sort({ createdAt: -1 });
     
     res.json(issues);
@@ -207,6 +272,7 @@ router.get('/community', auth, async (req, res) => {
     const issues = await Issue.find()
       .populate('reportedBy', 'name')
       .populate('assignedTo', 'name')
+      .populate('upvotedBy', 'name')
       .sort({ createdAt: -1 });
     
     // Strip government notes for privacy
@@ -232,6 +298,7 @@ router.get('/:id', auth, async (req, res) => {
     const issue = await Issue.findById(req.params.id)
       .populate('reportedBy', 'name email')
       .populate('assignedTo', 'name email')
+      .populate('upvotedBy', 'name email')
       .populate('statusHistory.changedBy', 'name');
 
     if (!issue) {
@@ -341,6 +408,12 @@ router.patch('/:id/upvote', auth, async (req, res) => {
 
     issue.upvotedBy.push(req.user.id);
     issue.upvotes = issue.upvotedBy.length;
+
+    // Adjust priority based on votes
+    if (issue.upvotes >= 10) issue.priority = 'high';
+    else if (issue.upvotes >= 5) issue.priority = 'medium';
+    else issue.priority = 'low';
+
     issue.updatedAt = new Date();
     await issue.save();
 
