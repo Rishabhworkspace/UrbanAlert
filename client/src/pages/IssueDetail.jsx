@@ -84,7 +84,11 @@ const IssueDetail = () => {
     }
   };
 
-  const hasUpvoted = issue?.upvotedBy?.includes(user?.id || user?._id);
+  const userId = user?.id || user?._id;
+  const hasUpvoted = issue?.upvotedBy?.some(u => {
+    const uId = typeof u === 'object' ? (u._id || u.id) : u;
+    return uId === userId;
+  });
 
   if (loading) {
     return (
@@ -111,7 +115,7 @@ const IssueDetail = () => {
   }
 
   const priority = issue.priority || issue.aiAnalysis?.suggestedPriority || 'medium';
-  const photoUrl = issue.photoUrl || 'https://placehold.co/800x400/f8fafc/94a3b8?text=No+Photo';
+  const photoUrl = issue.photoUrl || 'https://dummyimage.com/800x400/f8fafc/94a3b8&text=No+Photo';
   const lat = issue.location?.coordinates?.[1];
   const lng = issue.location?.coordinates?.[0];
 
@@ -163,7 +167,7 @@ const IssueDetail = () => {
           src={photoUrl}
           alt={issue.title}
           className="w-full h-auto max-h-[400px] object-cover"
-          onError={(e) => { e.target.src = 'https://placehold.co/800x400/f8fafc/94a3b8?text=Image+Error' }}
+          onError={(e) => { e.target.onerror = null; e.target.src = 'https://dummyimage.com/800x400/f8fafc/94a3b8&text=Image+Error' }}
         />
       </div>
 
