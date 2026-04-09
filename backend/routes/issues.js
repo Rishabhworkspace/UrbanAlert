@@ -196,6 +196,35 @@ router.get('/all', auth, async (req, res) => {
   }
 });
 
+// GET /api/issues/community
+// Get all reported issues for citizens (without sensitive data)
+router.get('/community', auth, async (req, res) => {
+  try {
+    if (req.user.role !== 'citizen') {
+      return res.status(403).json({ message: 'Citizen authorization required' });
+    }
+
+    const issues = await Issue.find()
+      .populate('reportedBy', 'name')
+      .populate('assignedTo', 'name')
+      .sort({ createdAt: -1 });
+    
+    // Strip government notes for privacy
+    const communityIssues = issues.map(issue => {
+      const issueObj = issue.toObject();
+      if (issueObj.reportedBy._id.toString() !== req.user.id) {
+        delete issueObj.governmentNotes;
+      }
+      return issueObj;
+    });
+
+    res.json(communityIssues);
+  } catch (err) {
+    console.error('Community issues error:', err.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 // GET /api/issues/:id
 // Get single issue detail (role-aware)
 router.get('/:id', auth, async (req, res) => {
@@ -209,12 +238,15 @@ router.get('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Issue not found' });
     }
 
-    // Citizens can only view their own issues
+    // Prepare response object
+    const issueResponse = issue.toObject();
+
+    // Hide government notes from citizens unless it's their own issue
     if (req.user.role === 'citizen' && issue.reportedBy._id.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized to view this issue' });
+      delete issueResponse.governmentNotes;
     }
 
-    res.json(issue);
+    res.json(issueResponse);
   } catch (err) {
     console.error('Get issue error:', err.message);
     if (err.kind === 'ObjectId') {
