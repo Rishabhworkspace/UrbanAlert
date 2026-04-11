@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MapPin, Clock, ArrowUp, CheckCircle, AlertTriangle, AlertCircle, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../api/axios';
+import toast from 'react-hot-toast';
 
 const getStatusColor = (status) => {
   switch(status) {
@@ -38,9 +40,12 @@ const getRelativeTime = (dateString) => {
   return `${diffDays} days ago`;
 };
 
-const IssueCard = ({ issue, isGov = false }) => {
+const IssueCard = ({ issue, isGov = false, onUpvoteSuccess }) => {
   const { user } = useAuth();
   const [showVoters, setShowVoters] = useState(false);
+  const [localUpvotes, setLocalUpvotes] = useState(issue.upvotes || 0);
+  const [upvoting, setUpvoting] = useState(false);
+  const [hasUpvoted, setHasUpvoted] = useState(false);
   const popupRef = useRef(null);
 
   useEffect(() => {
@@ -53,7 +58,47 @@ const IssueCard = ({ issue, isGov = false }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const photoUrl = issue.photoUrl || 'https://placehold.co/600x400/f8fafc/94a3b8?text=No+Photo';
+  // Check if user has already upvoted
+  useEffect(() => {
+    if (user && issue.upvotedBy) {
+      const userId = user.id || user._id;
+      const voted = issue.upvotedBy.some(u => {
+        const uId = typeof u === 'object' ? (u._id || u.id) : u;
+        return uId === userId;
+      });
+      setHasUpvoted(voted);
+    }
+  }, [user, issue.upvotedBy]);
+
+  // Sync local upvotes with prop changes
+  useEffect(() => {
+    setLocalUpvotes(issue.upvotes || 0);
+  }, [issue.upvotes]);
+
+  const handleUpvote = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (upvoting || hasUpvoted || isGov) return;
+    try {
+      setUpvoting(true);
+      const { data } = await api.patch(`/api/issues/${issue._id}/upvote`);
+      setLocalUpvotes(data.upvotes);
+      setHasUpvoted(true);
+      toast.success('Issue upvoted!');
+      if (onUpvoteSuccess) onUpvoteSuccess(issue._id, data);
+    } catch (err) {
+      if (err.response?.status === 400) {
+        toast.error('You have already upvoted this issue');
+        setHasUpvoted(true);
+      } else {
+        toast.error('Failed to upvote');
+      }
+    } finally {
+      setUpvoting(false);
+    }
+  };
+
+  const photoUrl = issue.photoUrl || 'https://dummyimage.com/600x400/f8fafc/94a3b8&text=No+Photo';
   const statusStr = issue.status ? issue.status.replace('_', ' ').toUpperCase() : 'REPORTED';
   const priority = issue.priority || issue.aiAnalysis?.suggestedPriority || 'medium';
 
@@ -75,7 +120,7 @@ const IssueCard = ({ issue, isGov = false }) => {
           src={photoUrl} 
           alt={issue.title} 
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-          onError={(e) => { e.target.src = 'https://placehold.co/600x400/f8fafc/94a3b8?text=Image+Error' }}
+          onError={(e) => { e.target.onerror = null; e.target.src = 'https://dummyimage.com/600x400/f8fafc/94a3b8&text=Image+Error' }}
         />
         <div className="absolute top-3 left-3 flex gap-2">
           <span className={`px-2.5 py-1 rounded-full text-xs font-bold border flex items-center shadow-sm backdrop-blur-md bg-white/90 ${getStatusColor(issue.status)}`}>
@@ -131,15 +176,32 @@ const IssueCard = ({ issue, isGov = false }) => {
               <span>{getRelativeTime(issue.createdAt || new Date())}</span>
             </div>
             
-            <div className="relative" ref={popupRef}>
-              <button 
-                onClick={(e) => { e.preventDefault(); setShowVoters(!showVoters); }}
-                className="flex items-center text-brand-blue font-medium bg-brand-pale px-2 py-0.5 rounded-full border border-brand-blue/20 hover:bg-brand-blue/10 transition-colors"
-                title="See who reported this"
-              >
-                <ArrowUp className="w-3 h-3 mr-1" />
-                {issue.upvotes || 0}
-              </button>
+            <div className="relative flex items-center gap-1.5" ref={popupRef}>
+              {!isGov && (
+                <button 
+                  onClick={handleUpvote}
+                  disabled={upvoting || hasUpvoted}
+                  className={`flex items-center gap-1 font-medium px-2.5 py-1 rounded-full text-xs transition-all ${
+                    hasUpvoted 
+                      ? 'bg-brand-blue text-white cursor-default shadow-sm' 
+                      : 'bg-brand-pale text-brand-blue border border-brand-blue/20 hover:bg-brand-blue hover:text-white hover:shadow-md active:scale-95'
+                  }`}
+                  title={hasUpvoted ? 'Already upvoted' : 'Upvote this issue'}
+                >
+                  <ArrowUp className={`w-3.5 h-3.5 ${upvoting ? 'animate-bounce' : ''}`} />
+                  <span className="font-bold">{localUpvotes}</span>
+                </button>
+              )}
+              {isGov && (
+                <button 
+                  onClick={(e) => { e.preventDefault(); setShowVoters(!showVoters); }}
+                  className="flex items-center text-brand-blue font-medium bg-brand-pale px-2 py-0.5 rounded-full border border-brand-blue/20 hover:bg-brand-blue/10 transition-colors"
+                  title="See who reported this"
+                >
+                  <ArrowUp className="w-3 h-3 mr-1" />
+                  {localUpvotes}
+                </button>
+              )}
               
               {showVoters && (
                 <div className="absolute bottom-full right-0 mb-2 w-48 bg-white border border-slate-200 shadow-xl rounded-lg p-3 z-20 text-left cursor-default">

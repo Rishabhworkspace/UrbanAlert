@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Filter, Search, AlertTriangle, AlertCircle, CheckCircle, Clock, MapPin, BarChart3, TrendingUp, FileText, Trash2 } from 'lucide-react';
+import { Filter, Search, AlertTriangle, AlertCircle, CheckCircle, Clock, MapPin, BarChart3, TrendingUp, FileText, Trash2, ArrowUpDown, ArrowUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api/axios';
 import GovSidebar from '../components/GovSidebar';
@@ -26,6 +26,7 @@ const GovDashboard = () => {
   // Filters State
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('date_desc');
 
   useEffect(() => {
     fetchIssues();
@@ -126,12 +127,26 @@ const GovDashboard = () => {
     }
   };
 
-  // Filtered Issues
+  // Filtered and Sorted Issues
   const filteredIssues = issues.filter(issue => {
     if (statusFilter !== 'all' && issue.status !== statusFilter) return false;
     if (searchQuery && !issue.title.toLowerCase().includes(searchQuery.toLowerCase()) 
         && !(issue.address || '').toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
+  });
+
+  const sortedAndFilteredIssues = [...filteredIssues].sort((a, b) => {
+    if (sortBy === 'date_desc') return new Date(b.createdAt) - new Date(a.createdAt);
+    if (sortBy === 'date_asc') return new Date(a.createdAt) - new Date(b.createdAt);
+    if (sortBy === 'upvotes_desc') return (b.upvotes || 0) - (a.upvotes || 0);
+    
+    if (sortBy.startsWith('priority_')) {
+      const pLevel = { critical: 4, high: 3, medium: 2, low: 1 };
+      const getP = (issue) => pLevel[issue.priority || issue.aiAnalysis?.suggestedPriority || 'medium'] || 0;
+      if (sortBy === 'priority_desc') return getP(b) - getP(a);
+      if (sortBy === 'priority_asc') return getP(a) - getP(b);
+    }
+    return 0;
   });
 
   // === Stats Cards Config ===
@@ -143,7 +158,9 @@ const GovDashboard = () => {
   ];
 
   return (
-    <div className="flex bg-slate-50 min-h-[calc(100vh-64px)]">
+    <div className="flex bg-slate-50 min-h-[calc(100vh-64px)] relative">
+      {/* Decorative gradient background blob */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-brand-blue/5 rounded-full blur-3xl pointer-events-none"></div>
       <GovSidebar />
       
       <main className="flex-1 p-8">
@@ -178,56 +195,74 @@ const GovDashboard = () => {
                   <option value="resolved">Resolved</option>
                 </select>
               </div>
+              <div className="relative min-w-[150px]">
+                <ArrowUpDown className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <select 
+                  className="input-field pl-9 appearance-none"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                >
+                  <option value="date_desc">Newest First</option>
+                  <option value="date_asc">Oldest First</option>
+                  <option value="priority_desc">Highest Priority</option>
+                  <option value="priority_asc">Lowest Priority</option>
+                  <option value="upvotes_desc">Most Upvoted</option>
+                </select>
+              </div>
             </div>
           </div>
 
           {/* Statistics Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {statCards.map((card, idx) => (
-              <div key={idx} className={`bg-gradient-to-br ${card.color} rounded-xl p-5 shadow-sm`}>
-                <div className="flex items-center justify-between mb-3">
-                  <span className={`text-sm font-medium ${card.textColor} opacity-90`}>{card.label}</span>
-                  <card.icon className={`w-5 h-5 ${card.textColor} opacity-70`} />
+              <div key={idx} className={`bg-gradient-to-br ${card.color} rounded-2xl p-6 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 transform group`}>
+                <div className="flex items-center justify-between mb-4">
+                  <span className={`text-sm font-semibold ${card.textColor} opacity-90 tracking-wide uppercase`}>{card.label}</span>
+                  <div className="bg-white/20 p-2 rounded-lg group-hover:scale-110 transition-transform">
+                    <card.icon className={`w-5 h-5 ${card.textColor}`} />
+                  </div>
                 </div>
-                <p className={`text-3xl font-bold ${card.textColor}`}>{card.value}</p>
+                <p className={`text-4xl font-bold ${card.textColor}`}>{card.value}</p>
               </div>
             ))}
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden relative z-10">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-sm font-semibold text-slate-600">
-                    <th className="py-4 px-6">Issue</th>
-                    <th className="py-4 px-6 hidden md:table-cell">Category</th>
-                    <th className="py-4 px-6 hidden lg:table-cell">Priority</th>
-                    <th className="py-4 px-6 hidden lg:table-cell">Date Reported</th>
-                    <th className="py-4 px-6">Status</th>
-                    <th className="py-4 px-6 text-center">Score</th>
-                    <th className="py-4 px-6 text-right">Actions</th>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-sm font-semibold text-slate-500 tracking-wide uppercase">
+                    <th className="py-5 px-6">Issue Details</th>
+                    <th className="py-5 px-6 hidden lg:table-cell">Priority / AI</th>
+                    <th className="py-5 px-6 hidden lg:table-cell">Date Reported</th>
+                    <th className="py-5 px-6 text-center">Engagement</th>
+                    <th className="py-5 px-6">Status</th>
+                    <th className="py-5 px-6 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
                   {loading ? (
-                    // Skeleton Rows
                     [...Array(5)].map((_, i) => (
                       <tr key={`skeleton-${i}`} className="animate-pulse">
-                        <td className="py-4 px-6">
-                          <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
-                          <div className="h-3 bg-slate-100 rounded w-1/2"></div>
+                        <td className="py-5 px-6">
+                          <div className="flex gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-slate-200 shrink-0"></div>
+                            <div className="flex-1">
+                              <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+                              <div className="h-3 bg-slate-100 rounded w-1/2"></div>
+                            </div>
+                          </div>
                         </td>
-                        <td className="py-4 px-6 hidden md:table-cell"><div className="h-6 bg-slate-200 rounded-full w-24"></div></td>
-                        <td className="py-4 px-6 hidden lg:table-cell"><div className="h-6 bg-slate-200 rounded-full w-20"></div></td>
-                        <td className="py-4 px-6 hidden lg:table-cell"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
-                        <td className="py-4 px-6"><div className="h-6 bg-slate-200 rounded-full w-28"></div></td>
-                        <td className="py-4 px-6 text-center"><div className="h-4 bg-slate-200 rounded w-8 mx-auto"></div></td>
-                        <td className="py-4 px-6 text-right"><div className="h-8 bg-slate-200 rounded w-20 ml-auto"></div></td>
+                        <td className="py-5 px-6 hidden lg:table-cell"><div className="h-6 bg-slate-200 rounded w-20 mb-1"></div><div className="h-3 bg-slate-100 rounded w-16"></div></td>
+                        <td className="py-5 px-6 hidden lg:table-cell"><div className="h-4 bg-slate-200 rounded w-24"></div></td>
+                        <td className="py-5 px-6 text-center"><div className="h-8 bg-slate-200 rounded w-12 mx-auto"></div></td>
+                        <td className="py-5 px-6"><div className="h-6 bg-slate-200 rounded-full w-24"></div></td>
+                        <td className="py-5 px-6 text-right"><div className="h-8 bg-slate-200 rounded w-20 ml-auto"></div></td>
                       </tr>
                     ))
-                  ) : filteredIssues.length === 0 ? (
+                  ) : sortedAndFilteredIssues.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="py-12 text-center text-slate-500">
+                      <td colSpan="6" className="py-16 text-center text-slate-500">
                         <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
                           <Search className="w-8 h-8 text-slate-400" />
                         </div>
@@ -236,27 +271,40 @@ const GovDashboard = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredIssues.map((issue) => (
-                      <tr key={issue._id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3">
+                    sortedAndFilteredIssues.map((issue) => (
+                      <tr key={issue._id} className="hover:bg-brand-pale/30 transition-all duration-300 border-l-4 border-transparent hover:border-l-brand-blue relative group">
+                        <td className="py-5 px-6">
+                          <div className="flex items-start gap-4">
                             {issue.photoUrl ? (
-                              <img src={issue.photoUrl} alt="thumbnail" className="w-10 h-10 rounded-lg object-cover bg-slate-100" />
+                              <img 
+                                src={issue.photoUrl} 
+                                alt="thumbnail" 
+                                className="w-12 h-12 rounded-xl object-cover bg-slate-100 shadow-sm shrink-0" 
+                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://dummyimage.com/100x100/f8fafc/94a3b8&text=Err' }}
+                              />
                             ) : (
-                              <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                              <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200/60">
                                 <AlertTriangle className="w-5 h-5 text-slate-400" />
                               </div>
                             )}
                             <div>
-                              <Link to={`/gov/issues/${issue._id}`} className="font-bold text-brand-navy line-clamp-1 hover:underline">
+                              <Link to={`/gov/issues/${issue._id}`} className="font-bold text-brand-navy text-base line-clamp-1 hover:text-brand-blue transition-colors">
                                 {issue.title}
                               </Link>
-                              <div className="flex items-center gap-1 mt-1 text-xs text-slate-500">
-                                <MapPin className="w-3 h-3" />
-                                <span className="line-clamp-1 max-w-[200px]">{issue.address || "Location Attached"}</span>
+                              
+                              <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                                <span className="bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wider border border-slate-200 shadow-sm">
+                                  {issue.category}
+                                </span>
+                                <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+                                <div className="flex items-center gap-1 text-xs text-slate-500">
+                                  <MapPin className="w-3 h-3" />
+                                  <span className="line-clamp-1 max-w-[180px]">{issue.address || "Location Attached"}</span>
+                                </div>
                               </div>
+                              
                               {issue.governmentNotes && (
-                                <div className="flex items-center gap-1 mt-1 text-xs text-blue-600">
+                                <div className="flex items-center gap-1 mt-1.5 text-xs text-blue-600 bg-blue-50/50 w-fit px-2 py-0.5 rounded border border-blue-100/50">
                                   <FileText className="w-3 h-3" />
                                   <span className="line-clamp-1 max-w-[200px]">{issue.governmentNotes}</span>
                                 </div>
@@ -264,44 +312,45 @@ const GovDashboard = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-6 hidden md:table-cell">
-                          <span className="bg-brand-pale text-brand-navy font-medium px-2.5 py-1 rounded-full border border-brand-blue/20 text-xs text-nowrap">
-                            {issue.category}
-                          </span>
+                        <td className="py-5 px-6 hidden lg:table-cell">
+                          <div className="flex flex-col items-start gap-1.5">
+                            <span className={`px-2.5 py-1 rounded-md text-xs font-bold border shadow-sm ${getPriorityColor(issue.priority || issue.aiAnalysis?.suggestedPriority)}`}>
+                              {(issue.priority || issue.aiAnalysis?.suggestedPriority || 'medium').toUpperCase()}
+                            </span>
+                            {issue.aiAnalysis?.confidenceScore && (
+                              <span className="text-[10px] text-slate-500 font-semibold ml-0.5 flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3"/> AI Match {Math.round(issue.aiAnalysis.confidenceScore * 100)}%
+                              </span>
+                            )}
+                          </div>
                         </td>
-                        <td className="py-4 px-6 hidden lg:table-cell">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${getPriorityColor(issue.priority || issue.aiAnalysis?.suggestedPriority)}`}>
-                            {(issue.priority || issue.aiAnalysis?.suggestedPriority || 'medium').toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 hidden lg:table-cell">
-                          <div className="flex items-center text-slate-500">
+                        <td className="py-5 px-6 hidden lg:table-cell">
+                          <div className="flex items-center text-slate-500 text-sm font-medium">
                             <Clock className="w-4 h-4 mr-1.5 shrink-0" />
                             {new Date(issue.createdAt).toLocaleDateString()}
                           </div>
                         </td>
-                        <td className="py-4 px-6">
+                        <td className="py-5 px-6 text-center">
+                          <div className="flex flex-col items-center justify-center">
+                            <span className="text-lg font-black text-brand-navy">{issue.upvotes || 0}</span>
+                            <span className="text-[9px] text-brand-blue uppercase tracking-widest font-bold flex items-center gap-0.5 mt-0.5 bg-brand-pale px-1.5 py-0.5 rounded border border-brand-blue/20">
+                              <ArrowUp className="w-2.5 h-2.5"/> Votes
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-5 px-6">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-bold border inline-flex items-center ${getStatusColor(issue.status)}`}>
                             {getStatusIcon(issue.status)}
                             {issue.status ? issue.status.replace('_', ' ').toUpperCase() : 'REPORTED'}
                           </span>
                         </td>
-                        <td className="py-4 px-6 text-center">
-                          {issue.aiAnalysis?.confidenceScore ? (
-                            <span className="text-xs font-bold text-brand-navy bg-slate-100 px-2 py-1 rounded">
-                              {Math.round(issue.aiAnalysis.confidenceScore * 100)}%
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
-                        </td>
-                        <td className="py-4 px-6 text-right">
+                        <td className="py-5 px-6 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button 
                               onClick={() => handleUpdateClick(issue)}
-                              className="bg-brand-navy text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
+                              className="bg-brand-navy/5 text-brand-navy hover:bg-brand-navy hover:text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1"
                             >
-                              Update
+                              Update ...
                             </button>
                             {deleteConfirmId === issue._id ? (
                               <div className="flex gap-1">

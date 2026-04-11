@@ -14,7 +14,8 @@ const ReportIssue = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: CATEGORIES[0]
+    category: CATEGORIES[0],
+    priority: 'low'
   });
 
   // Location State
@@ -106,6 +107,7 @@ const ReportIssue = () => {
     payload.append('title', formData.title);
     payload.append('description', formData.description);
     payload.append('category', formData.category);
+    payload.append('priority', formData.priority);
     
     if (gpsLat && gpsLng) {
       payload.append('latitude', gpsLat);
@@ -124,9 +126,7 @@ const ReportIssue = () => {
     const loadingToast = toast.loading('Submitting issue...');
     
     try {
-      await api.post('/api/issues', payload, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      await api.post('/api/issues', payload);
       toast.success('Issue reported successfully!', { id: loadingToast });
       navigate('/my-reports');
     } catch (err) {
@@ -163,6 +163,16 @@ const ReportIssue = () => {
               <select name="category" value={formData.category} onChange={handleInputChange}
                 className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-brand-mid outline-none transition-all bg-white">
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Priority</label>
+              <select name="priority" value={formData.priority} onChange={handleInputChange}
+                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-brand-mid outline-none transition-all bg-white">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
               </select>
             </div>
 

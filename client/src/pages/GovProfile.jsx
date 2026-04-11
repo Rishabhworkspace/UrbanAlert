@@ -17,17 +17,18 @@ const GovProfile = () => {
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
             <div className="h-32 bg-brand-navy bg-gradient-to-r from-brand-navy to-brand-blue"></div>
             <div className="px-8 pb-8">
-              <div className="flex flex-col md:flex-row gap-6 items-start md:items-end -mt-12 mb-6">
-                <div className="w-24 h-24 rounded-xl bg-white p-2 shadow-md flex-shrink-0 flex items-center justify-center">
-                  <div className="w-full h-full bg-slate-100 rounded-lg flex items-center justify-center">
-                    <Shield className="w-10 h-10 text-brand-blue" />
-                  </div>
+              {/* Avatar */}
+              <div className="w-24 h-24 rounded-xl bg-white p-2 shadow-md flex items-center justify-center -mt-12 mb-4 z-10 relative border border-slate-100">
+                <div className="w-full h-full bg-slate-100 rounded-lg flex items-center justify-center">
+                  <Shield className="w-10 h-10 text-brand-blue" />
                 </div>
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-slate-800">{user?.name}</h2>
-                  <div className="flex items-center text-slate-500 mt-1 gap-4">
-                    <span className="flex items-center gap-1"><Mail className="w-4 h-4" /> {user?.email}</span>
-                  </div>
+              </div>
+              
+              {/* User Identity */}
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-slate-800">{user?.name}</h2>
+                <div className="flex items-center text-slate-500 mt-1 gap-4">
+                  <span className="flex items-center gap-1"><Mail className="w-4 h-4" /> {user?.email}</span>
                 </div>
               </div>
 

@@ -39,7 +39,7 @@ router.post('/', auth, async (req, res) => {
     }
 
     // Step 3: Extract and validate fields
-    const { title, description, category, latitude, longitude, address } = req.body;
+    const { title, description, category, latitude, longitude, address, priority } = req.body;
     
     if (!title || !description || !category) {
       return res.status(400).json({ message: 'Title, description, and category are required' });
@@ -72,28 +72,22 @@ router.post('/', auth, async (req, res) => {
             location: {
               $near: {
                 $geometry: { type: 'Point', coordinates: [lng, lat] },
-                $maxDistance: 1000 // Increased to 1km to catch same-area reports
+                $maxDistance: 20 // 20 meters — only catch issues at the exact same location
               }
             }
           });
         }
       } 
       
-      // If no geographic duplicate was found, try matching by exact title or exact address string
+      // If no geographic duplicate was found, try matching by exact title
       if (!duplicateIssue) {
         // Escape special characters for regex safety
         const safeTitle = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const orConditions = [{ title: { $regex: new RegExp(`^${safeTitle}$`, 'i') } }];
-        
-        if (address) {
-          const safeAddress = address.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          orConditions.push({ address: { $regex: new RegExp(`^${safeAddress}$`, 'i') } });
-        }
 
         duplicateIssue = await Issue.findOne({
           category,
           status: { $ne: 'resolved' },
-          $or: orConditions
+          title: { $regex: new RegExp(`^${safeTitle}$`, 'i') }
         });
       }
     } catch (err) {
@@ -135,7 +129,7 @@ router.post('/', auth, async (req, res) => {
       reportedBy: req.user.id,
       photoUrl,
       aiAnalysis,
-      priority: aiAnalysis.suggestedPriority || 'low',
+      priority: priority || aiAnalysis.suggestedPriority || 'low',
       statusHistory: [{
         status: 'reported',
         changedBy: req.user.id,
