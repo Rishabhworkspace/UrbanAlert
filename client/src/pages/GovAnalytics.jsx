@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import api from '../api/axios';
 import GovSidebar from '../components/GovSidebar';
 
-const COLORS = ['#0F2D54', '#1B4F8A', '#2E6DB4', '#EEF4FF', '#E2E8F0'];
+const COLORS = ['#0F2D54', '#1B4F8A', '#2E6DB4', '#6366f1', '#94a3b8'];
 const STATUS_COLORS = {
   reported: '#ef4444',
   in_progress: '#f59e0b',

@@ -228,6 +228,12 @@ const GovDashboard = () => {
           </div>
 
           <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden relative z-10">
+            {/* Result count */}
+            {!loading && (
+              <div className="px-6 py-3 border-b border-slate-100 text-sm text-slate-500">
+                Showing <span className="font-semibold text-brand-navy">{sortedAndFilteredIssues.length}</span> of <span className="font-semibold text-brand-navy">{issues.length}</span> issues
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
