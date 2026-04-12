@@ -38,7 +38,7 @@ const analyzeIssueWithAI = async (title, description, category) => {
 
     const chatCompletion = await getGroqClient().chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
-      model: 'llama3-8b-8192',
+      model: 'llama-3.1-8b-instant',
       temperature: 0.1, // Low temp for more consistent JSON structure
       response_format: { type: "json_object" }
     });
