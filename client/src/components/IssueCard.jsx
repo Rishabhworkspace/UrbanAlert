@@ -37,7 +37,8 @@ const getRelativeTime = (dateString) => {
   const diffDays = Math.floor((new Date() - new Date(dateString)) / (1000 * 60 * 60 * 24));
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Yesterday';
-  return `${diffDays} days ago`;
+  if (diffDays <= 30) return `${diffDays} days ago`;
+  return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
 const IssueCard = ({ issue, isGov = false, onUpvoteSuccess }) => {
@@ -205,7 +206,7 @@ const IssueCard = ({ issue, isGov = false, onUpvoteSuccess }) => {
               
               {showVoters && (
                 <div className="absolute bottom-full right-0 mb-2 w-48 bg-white border border-slate-200 shadow-xl rounded-lg p-3 z-20 text-left cursor-default">
-                  <h4 className="text-xs font-bold text-slate-800 mb-2 border-b border-slate-100 pb-1">Reported by:</h4>
+                  <h4 className="text-xs font-bold text-slate-800 mb-2 border-b border-slate-100 pb-1">Upvoted by:</h4>
                   <ul className="text-xs text-slate-600 max-h-32 overflow-y-auto space-y-1">
                     {allReporters.map((name, idx) => (
                       <li key={idx} className="flex items-center">

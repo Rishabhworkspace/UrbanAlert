@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { useNavigate } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import api from '../api/axios';
 import GovSidebar from '../components/GovSidebar';
-import { MapPin } from 'lucide-react';
+import { MapPin, ArrowRight } from 'lucide-react';
 
 // Fix for default Leaflet markers missing in React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -31,7 +32,6 @@ const icons = {
   default: createIcon('blue')
 };
 
-import { useNavigate } from 'react-router-dom';
 
 const GovMap = () => {
   const [issues, setIssues] = useState([]);
@@ -103,9 +103,20 @@ const GovMap = () => {
                   key={issue._id} 
                   position={[issue.location.coordinates[1], issue.location.coordinates[0]]}
                   icon={icons[issue.status] || icons.default}
-                  title={issue.title}
-                  eventHandlers={{ click: () => navigate(`/gov/issues/${issue._id}`) }}
-                />
+                >
+                  <Popup>
+                    <div className="text-sm min-w-[160px]">
+                      <p className="font-bold text-brand-navy mb-1 line-clamp-2">{issue.title}</p>
+                      <p className="text-xs text-slate-500 mb-2 capitalize">{issue.category} • {(issue.status || 'reported').replace('_', ' ')}</p>
+                      <button
+                        onClick={() => navigate(`/gov/issues/${issue._id}`)}
+                        className="flex items-center gap-1 text-xs font-semibold text-brand-blue hover:underline"
+                      >
+                        View Details <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </Popup>
+                </Marker>
               ))}
             </MapContainer>
           )}

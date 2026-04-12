@@ -122,10 +122,10 @@ const IssueDetail = () => {
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Back Nav */}
-      <Link to="/my-reports" className="inline-flex items-center text-brand-blue hover:text-brand-navy font-medium mb-6 text-sm transition-colors">
+      <button onClick={() => navigate(-1)} className="inline-flex items-center text-brand-blue hover:text-brand-navy font-medium mb-6 text-sm transition-colors">
         <ArrowLeft className="w-4 h-4 mr-1.5" />
-        Back to My Reports
-      </Link>
+        Back
+      </button>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
