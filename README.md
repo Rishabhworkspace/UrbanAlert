@@ -1,99 +1,111 @@
-# 🚨 UrbanAlert - Smart Civic Reporting Platform
+# UrbanAlert - Smart Civic Reporting Platform
 
-**UrbanAlert** is a modern, responsive web application designed to bridge the gap between citizens and local government authorities. It allows residents to easily report civic issues—such as potholes, water leaks, and broken streetlights—with real-time GPS tracking and photo evidence. Government officials can view, manage, and analyze these reports through a dedicated administrative dashboard.
+UrbanAlert is a modern, responsive web application designed to bridge the communications gap between citizens and local government authorities. The platform empowers residents to seamlessly report civic issues such as infrastructure damage, public hazards, and sanitation emergencies, while providing government officials with a robust, data-driven administrative dashboard to manage community workflows.
 
-## ✨ Features
+By leveraging real-time GPS tracking, reverse geocoding, and AI-powered triage analysis, UrbanAlert drastically reduces the response latency for municipal authorities while maintaining full transparency with the reporting citizens.
 
-### 🧑‍🤝‍🧑 Citizen Portal
-- **Intuitive Issue Reporting:** Easily submit reports with automatic GPS detection, image upload, and rich descriptions.
-- **Urgency Flags:** Option to mark issues as immediate safety hazards (Emergency/Critical priority).
-- **Public Feed:** View, search, and upvote issues reported by other community members in the local area.
-- **Issue Tracking:** Track your reported issues' real-time resolution status and updates from officers.
+## System Features
 
-### 🏛️ Government Portal
-- **Interactive Live Map:** Real-time geographical overview of all reported issues clustered by status and severity.
-- **In-Depth Analytics:** Visual graphs and summaries of issue distributions (by type, priority, and resolution times) using Recharts.
-- **Action Dashboard:** Kanban/List-style management for moving issues from *Reported* → *In Progress* → *Resolved*.
-- **AI-Powered Priority Triage:** Background AI analysis automatically tags and assigns priority to reports based on visual and textual descriptions.
+### Citizen Portal Features
+- **Intuitive Issue Reporting:** A streamlined interface for submitting reports with automated location detection (GPS integration) and secure media/image uploads.
+- **Geospatial Mapping Integration:** Automatic translation of device coordinates into localized address data to provide highly accurate location mapping for city officers.
+- **Urgency Controls:** Users possess the ability to manually flag severe and immediate public safety hazards for priority assessment.
+- **Community Upvoting & Feed:** A comprehensive public feed where users can track, search, and upvote civic issues reported by other members of the community, fostering cooperative civic engagement.
+- **Real-Time Issue Tracking:** Individual dashboards for residents to strictly track the live resolution pipeline of their reported issues, complete with direct status updates and official government notes.
 
-## 🛠️ Technology Stack
-- **Frontend:** React (Vite), Tailwind CSS (v4), React Router, React Leaflet, Recharts, Lucide Icons.
-- **Backend:** Node.js, Express.js.
-- **Database:** MongoDB (using Mongoose for schemas and 2dsphere indexing for geospatial queries).
-- **Authentication:** JWT-based robust authentication with separate Role-Based Access Control (RBAC) for Citizens and Officers.
-- **Media Storage:** Cloudinary (via Multer) for secure image uploads.
-- **Geocoding:** Nominatim reverse geocoding to automatically resolve physical addresses from GPS coordinates.
+### Government Administrative Portal Features
+- **Interactive Live Tracking Map:** A real-time, interactive Leaflet-powered geographical overview plotting every submitted issue, clustered visually by status, priority, and date reported.
+- **In-Depth System Analytics:** Dynamic visual representations (utilizing Recharts) of civic data allowing officers to monitor issue distribution by category, triage level, and resolution efficiency over time.
+- **Pipeline Kanban Dashboard:** An efficient management interface where officials can easily advance issues through dynamic statuses (Reported to In Progress to Resolved).
+- **AI-Powered Priority Triage:** Background LLM integrations that analyze user text descriptions to automatically tag reports and suggest urgency levels, ensuring high-priority emergencies do not get lost in heavily populated queues.
+- **Direct Citizen Communication:** Support for officials to attach public-facing notes when updating ticket statuses, providing specific context to the original reporter.
 
-## 🚀 Getting Started
+## Architecture & Technology Stack
+
+UrbanAlert relies on a modern full-stack web architecture, strictly decoupled between frontend client interfaces and backend REST APIs.
+
+### Frontend
+- **Framework:** React (Vite)
+- **Styling:** Tailwind CSS (v4)
+- **Routing:** React Router (DOM)
+- **Mapping & Data Viz:** React Leaflet, Recharts
+- **Icons:** Lucide React
+
+### Backend
+- **Environment:** Node.js, Express.js
+- **Database:** MongoDB (utilizing Mongoose ORM with 2dsphere indexing for advanced spatial querying)
+- **Authentication:** Secure JWT-based pipelines with strict Role-Based Access Control (RBAC) differentiating Citizen versus Officer routes.
+- **AI Triage Integration:** Large Language Model endpoints dedicated to parsing plain-text infrastructure damage for priority mapping.
+- **Media Transcoding & Storage:** Cloudinary integration (via Multer) securely capturing and hosting citizen photographic evidence.
+- **Geocoding Pipelines:** Nominatim reverse geocoding to programmatically resolve GPS coordinates to authenticated street addresses.
+
+## Getting Started
 
 ### Prerequisites
 - Node.js (v18+)
-- MongoDB connection string (Atlas or Local)
-- Cloudinary Account (for image hosting)
+- MongoDB Database Instance (Atlas or Local Daemon)
+- Cloudinary Account Configuration (for image hosting)
 
 ### 1. Installation
 
-Clone the repository and install dependencies for both backend and frontend:
+Clone the repository and install dependency paths for both the server and client wrappers:
 
 ```bash
-# Clone the repo
+# Clone the repository
 git clone https://github.com/Rishabhworkspace/UrbanAlert.git
 cd UrbanAlert
 
-# Install Backend dependencies
+# Install Backend Node dependencies
 cd backend
 npm install
 
-# Install Frontend dependencies
+# Install Frontend Vite dependencies
 cd ../client
 npm install
 ```
 
-### 2. Environment Variables
+### 2. Environment Configuration
 
-Create a `.env` file in the `backend` directory and add your configuration details:
+Create a `.env` file within the `/backend` directory and add the essential integration keys:
 
 ```env
-# Backend Server Port
+# Backend Server Port Configuration
 PORT=5000
 
 # MongoDB URI String
 MONGODB_URI=your_mongodb_connection_string
 
-# Application Secrets
+# Authentication Secrets
 JWT_SECRET=your_jwt_secret_key
 
-# Cloudinary Integration
+# Cloudinary Integration Keys
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-### 3. Run the Development Servers
+### 3. Executing the Environment
 
-Use two terminal instances to run the servers concurrently:
+Initialize both the frontend and backend servers asynchronously in separate terminal instances:
 
-**Terminal 1 (Backend):**
+**Terminal 1 (Backend Initialization):**
 ```bash
 cd backend
 npm run dev
 ```
 
-**Terminal 2 (Frontend):**
+**Terminal 2 (Frontend Initialization):**
 ```bash
 cd client
 npm run dev
 ```
 
-The app will be running on `http://localhost:5173`.
+The frontend application routing will be accessible immediately via `http://localhost:5173`, with the backend API communicating on port `5000`.
 
-## 📸 Screenshots
+## Contributing Information
 
-*(To be added - You can mount screenshots of your beautiful UI here!)*
+Contributions, issue logging, and platform feature requests are deeply welcomed. Feel free to check the issues page or submit pull requests targeted to the primary development branch.
 
-## 🤝 Contributing
+## License Guidelines
 
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
-
-## 📄 License
-This project is open-source and available under the [MIT License](LICENSE).
+This application architecture is entirely open-source and officially available under the [MIT License](LICENSE).
