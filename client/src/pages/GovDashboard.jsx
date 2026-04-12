@@ -170,22 +170,21 @@ const GovDashboard = () => {
               <h1 className="text-3xl font-bold text-brand-navy">Dashboard</h1>
               <p className="text-slate-500 mt-1">Manage and track incoming civic issues.</p>
             </div>
-            
-            <div className="flex gap-3">
-              <div className="relative">
-                <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative w-full sm:w-auto">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input 
                   type="text" 
                   placeholder="Search issues..." 
-                  className="input-field pl-10 w-full md:w-64"
+                  className="w-full sm:w-64 bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue block py-2 pl-9 pr-4 outline-none transition-all shadow-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <div className="relative min-w-[150px]">
+              <div className="relative min-w-[150px] w-full sm:w-auto">
                 <Filter className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <select 
-                  className="input-field pl-9 appearance-none"
+                  className="w-full bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue block py-2 pl-9 pr-8 outline-none cursor-pointer shadow-sm hover:bg-slate-50 transition-colors text-left"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -195,10 +194,10 @@ const GovDashboard = () => {
                   <option value="resolved">Resolved</option>
                 </select>
               </div>
-              <div className="relative min-w-[150px]">
+              <div className="relative min-w-[160px] w-full sm:w-auto">
                 <ArrowUpDown className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <select 
-                  className="input-field pl-9 appearance-none"
+                  className="w-full bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue block py-2 pl-9 pr-8 outline-none cursor-pointer shadow-sm hover:bg-slate-50 transition-colors text-left"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                 >
