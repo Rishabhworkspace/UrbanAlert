@@ -162,6 +162,39 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+// GET /api/issues/public/stats
+// Public statistics for landing page
+router.get('/public/stats', async (req, res) => {
+  try {
+    const totalIssues = await Issue.countDocuments();
+    const resolvedIssues = await Issue.countDocuments({ status: 'resolved' });
+    
+    res.json({
+      total: totalIssues,
+      resolved: resolvedIssues
+    });
+  } catch (err) {
+    console.error('Public stats error:', err.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// GET /api/issues/public/recent
+// Public recent issues for landing page
+router.get('/public/recent', async (req, res) => {
+  try {
+    const issues = await Issue.find()
+      .select('title category status createdAt photoUrl')
+      .sort({ createdAt: -1 })
+      .limit(2);
+      
+    res.json(issues);
+  } catch (err) {
+    console.error('Public recent error:', err.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 // GET /api/issues/stats
 // Dashboard statistics (Government only)
 // NOTE: This must be BEFORE /:id to avoid "stats" being treated as an ID param

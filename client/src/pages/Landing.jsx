@@ -4,15 +4,34 @@ import {
   MapPin, Shield, Camera, Search, ArrowRight, Activity, 
   Users, CheckCircle, BarChart3, Zap
 } from 'lucide-react';
+import api from '../api/axios';
 
 const Landing = () => {
   const [scrolled, setScrolled] = useState(false);
+  const [stats, setStats] = useState({ total: 0, resolved: 0 });
+  const [recentIssues, setRecentIssues] = useState([]);
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll);
+    
+    // Fetch live public data
+    const fetchPublicData = async () => {
+      try {
+        const [statsRes, recentRes] = await Promise.all([
+          api.get('/api/issues/public/stats'),
+          api.get('/api/issues/public/recent')
+        ]);
+        setStats(statsRes.data);
+        setRecentIssues(recentRes.data);
+      } catch (err) {
+        console.error('Failed to fetch public data:', err);
+      }
+    };
+    fetchPublicData();
+    
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -70,16 +89,16 @@ const Landing = () => {
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center divide-y md:divide-y-0 md:divide-x divide-white/10">
             <div className="p-4">
-              <h4 className="text-5xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70">12K+</h4>
+              <h4 className="text-5xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70">{stats.resolved}+</h4>
               <p className="text-brand-pale/70 font-medium tracking-wide uppercase text-sm">Issues Resolved</p>
             </div>
             <div className="p-4 pt-8 md:pt-4">
-              <h4 className="text-5xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70">48h</h4>
-              <p className="text-brand-pale/70 font-medium tracking-wide uppercase text-sm">Average Response Time</p>
+              <h4 className="text-5xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70">{stats.total}+</h4>
+              <p className="text-brand-pale/70 font-medium tracking-wide uppercase text-sm">Total Reports</p>
             </div>
             <div className="p-4 pt-8 md:pt-4">
-              <h4 className="text-5xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70">50+</h4>
-              <p className="text-brand-pale/70 font-medium tracking-wide uppercase text-sm">Partnered Municipalities</p>
+              <h4 className="text-5xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70">48h</h4>
+              <p className="text-brand-pale/70 font-medium tracking-wide uppercase text-sm">Avg Response Time</p>
             </div>
           </div>
         </div>
@@ -212,41 +231,47 @@ const Landing = () => {
                     </div>
                   </div>
 
-                  {/* Mock Content */}
+                  {/* Real Content */}
                   <div className="space-y-4">
-                    {/* Mock Card 1 */}
-                    <div className="bg-slate-50 rounded-xl p-4 flex items-start gap-4 border border-slate-100 transform transition-transform hover:-translate-y-1 hover:shadow-md cursor-pointer">
-                      <div className="w-16 h-16 rounded-lg bg-orange-200 flex-shrink-0 relative overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=200" alt="pothole" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start mb-1">
-                          <h5 className="font-bold text-slate-800">Massive Pothole on 5th Ave</h5>
-                          <span className="text-xs font-bold bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Pending</span>
+                    {recentIssues.length > 0 ? (
+                      recentIssues.map((issue) => (
+                        <div key={issue._id} className="bg-slate-50 rounded-xl p-4 flex items-start gap-4 border border-slate-100 transform transition-transform hover:-translate-y-1 hover:shadow-md cursor-pointer">
+                          <div className="w-16 h-16 rounded-lg bg-slate-200 flex-shrink-0 relative overflow-hidden">
+                            {issue.photoUrl ? (
+                              <img src={issue.photoUrl} alt={issue.category} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-slate-100 italic text-xs text-slate-400">No Image</div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start mb-1">
+                              <h5 className="font-bold text-slate-800 line-clamp-1" title={issue.title}>{issue.title}</h5>
+                              <span className={`text-xs font-bold px-2 py-1 rounded ${
+                                issue.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                                issue.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {issue.status === 'in_progress' ? 'In Progress' : issue.status.charAt(0).toUpperCase() + issue.status.slice(1)}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500 mb-2">
+                              Reported on {new Date(issue.createdAt).toLocaleDateString()} • {issue.category.charAt(0).toUpperCase() + issue.category.slice(1)}
+                            </p>
+                            <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                              <div className={`h-full ${
+                                issue.status === 'resolved' ? 'bg-green-500 w-full' :
+                                issue.status === 'in_progress' ? 'bg-blue-500 w-2/3' :
+                                'bg-yellow-400 w-1/3'
+                              }`}></div>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-xs text-slate-500 mb-2">Reported 2h ago • Infrastructure</p>
-                        <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                          <div className="bg-yellow-400 w-1/3 h-full"></div>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-4 text-slate-500 italic text-sm">
+                        Loading initial reports...
                       </div>
-                    </div>
-
-                    {/* Mock Card 2 */}
-                    <div className="bg-slate-50 rounded-xl p-4 flex items-start gap-4 border border-slate-100 transform transition-transform hover:-translate-y-1 hover:shadow-md cursor-pointer">
-                      <div className="w-16 h-16 rounded-lg bg-slate-200 flex-shrink-0 relative overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1533903345306-15d1c30952de?auto=format&fit=crop&q=80&w=200" alt="garbage" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start mb-1">
-                          <h5 className="font-bold text-slate-800">Illegal Dumping near Park</h5>
-                          <span className="text-xs font-bold bg-green-100 text-green-800 px-2 py-1 rounded">Resolved</span>
-                        </div>
-                        <p className="text-xs text-slate-500 mb-2">Reported 1d ago • Sanitation</p>
-                        <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                          <div className="bg-green-500 w-full h-full"></div>
-                        </div>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
