@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { MapPin, Navigation, Info, UploadCloud, Image as ImageIcon, X } from 'lucide-react';
+import { MapPin, Navigation, Info, UploadCloud, Image as ImageIcon, X, Zap, Phone } from 'lucide-react';
 import api from '../api/axios';
 import IssueMap from '../components/IssueMap';
 import { reverseGeocode } from '../utils/geocode';
 
-const CATEGORIES = ['Pothole', 'Garbage', 'Street Light', 'Flooding', 'Other'];
+const CATEGORIES = ['Pothole', 'Garbage', 'Street Light', 'Flooding', 'Water Leak', 'Fallen Tree', 'Graffiti', 'Traffic Signal', 'Abandoned Vehicle', 'Other'];
+const MAX_DESC_LENGTH = 1000;
 
 const ReportIssue = () => {
   const navigate = useNavigate();
@@ -28,6 +29,10 @@ const ReportIssue = () => {
   // Photo State
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+
+  // Extra opt-in fields
+  const [isEmergency, setIsEmergency] = useState(false);
+  const [contactPermission, setContactPermission] = useState(false);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -69,6 +74,13 @@ const ReportIssue = () => {
     );
   };
 
+  const clearGps = () => {
+    setGpsLat(null);
+    setGpsLng(null);
+    setGpsAddress('');
+    setLocationStatus('idle');
+  };
+
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -107,7 +119,8 @@ const ReportIssue = () => {
     payload.append('title', formData.title);
     payload.append('description', formData.description);
     payload.append('category', formData.category);
-    payload.append('priority', formData.priority);
+    // Upgrade to critical if emergency toggle is on
+    payload.append('priority', isEmergency ? 'critical' : formData.priority);
     
     if (gpsLat && gpsLng) {
       payload.append('latitude', gpsLat);
@@ -122,6 +135,10 @@ const ReportIssue = () => {
       payload.append('photo', photoFile);
     }
 
+    // Append opt-in metadata
+    payload.append('isEmergency', isEmergency);
+    payload.append('contactPermission', contactPermission);
+
     setLoading(true);
     const loadingToast = toast.loading('Submitting issue...');
     
@@ -134,6 +151,8 @@ const ReportIssue = () => {
       setLoading(false);
     }
   };
+
+  const descLength = formData.description.length;
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -168,19 +187,30 @@ const ReportIssue = () => {
             
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Priority</label>
-              <select name="priority" value={formData.priority} onChange={handleInputChange}
-                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-brand-mid outline-none transition-all bg-white">
+              <select name="priority" value={isEmergency ? 'critical' : formData.priority} onChange={handleInputChange}
+                disabled={isEmergency}
+                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-brand-mid outline-none transition-all bg-white disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed">
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
+                <option value="critical">Critical</option>
               </select>
+              {isEmergency && (
+                <p className="text-xs text-red-600 mt-1 font-medium">Priority set to Critical due to emergency flag.</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-slate-700">Description</label>
+                <span className={`text-xs font-mono ${descLength > MAX_DESC_LENGTH * 0.9 ? 'text-red-500' : 'text-slate-400'}`}>
+                  {descLength} / {MAX_DESC_LENGTH}
+                </span>
+              </div>
               <textarea name="description" required value={formData.description} onChange={handleInputChange} rows={4}
                 className="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-brand-mid outline-none transition-all resize-none"
-                placeholder="Describe the issue in detail..." />
+                placeholder="Describe the issue in detail — location specifics, severity, how long it has been present..."
+                maxLength={MAX_DESC_LENGTH} />
             </div>
           </div>
         </section>
@@ -198,15 +228,26 @@ const ReportIssue = () => {
             <div className="space-y-4 pt-1">
               <div>
                 <span className="block text-sm font-medium text-slate-700 mb-2">GPS Auto-Detect</span>
-                <button 
-                  type="button" 
-                  onClick={handleUseMyLocation}
-                  disabled={locationStatus === 'loading'}
-                  className="w-full bg-slate-100 hover:bg-slate-200 text-brand-navy font-medium py-3 px-4 rounded-lg flex items-center justify-center transition-colors border border-slate-200 disabled:opacity-50"
-                >
-                  <Navigation className={`w-5 h-5 mr-2 ${locationStatus === 'loading' ? 'animate-pulse' : ''}`} />
-                  {locationStatus === 'loading' ? 'Detecting...' : 'Use My Current Location'}
-                </button>
+                {locationStatus !== 'success' ? (
+                  <button 
+                    type="button" 
+                    onClick={handleUseMyLocation}
+                    disabled={locationStatus === 'loading'}
+                    className="w-full bg-slate-100 hover:bg-slate-200 text-brand-navy font-medium py-3 px-4 rounded-lg flex items-center justify-center transition-colors border border-slate-200 disabled:opacity-50"
+                  >
+                    <Navigation className={`w-5 h-5 mr-2 ${locationStatus === 'loading' ? 'animate-pulse' : ''}`} />
+                    {locationStatus === 'loading' ? 'Detecting...' : 'Use My Current Location'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={clearGps}
+                    className="w-full bg-red-50 hover:bg-red-100 text-red-700 font-medium py-3 px-4 rounded-lg flex items-center justify-center transition-colors border border-red-200"
+                  >
+                    <X className="w-5 h-5 mr-2" />
+                    Clear GPS Location
+                  </button>
+                )}
               </div>
 
               {locationStatus === 'success' && gpsLat && (
@@ -269,6 +310,61 @@ const ReportIssue = () => {
               </button>
             </div>
           )}
+        </section>
+
+        {/* Section 4: Additional Options */}
+        <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <h2 className="text-xl font-semibold text-brand-navy mb-4 flex items-center">
+            <Zap className="w-5 h-5 mr-2 text-amber-500" />
+            Additional Options
+          </h2>
+
+          <div className="space-y-4">
+            {/* Emergency Toggle */}
+            <label className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${isEmergency ? 'border-red-400 bg-red-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <div className="relative flex items-center justify-center mt-0.5">
+                <input
+                  type="checkbox"
+                  checked={isEmergency}
+                  onChange={(e) => setIsEmergency(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`w-10 h-6 rounded-full transition-colors ${isEmergency ? 'bg-red-500' : 'bg-slate-200'}`} />
+                <div className={`absolute w-4 h-4 bg-white rounded-full shadow transition-transform ${isEmergency ? 'translate-x-2' : '-translate-x-2'}`} />
+              </div>
+              <div>
+                <p className={`font-semibold text-sm ${isEmergency ? 'text-red-800' : 'text-slate-700'}`}>
+                  🚨 This is an emergency / safety hazard
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Mark this if the issue poses an immediate risk (e.g. open manhole, downed power line, severe flooding). This will flag it as <strong>Critical Priority</strong> for immediate government attention.
+                </p>
+              </div>
+            </label>
+
+            {/* Contact Permission */}
+            <label className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${contactPermission ? 'border-brand-blue/40 bg-brand-pale' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <div className="relative flex items-center justify-center mt-0.5">
+                <input
+                  type="checkbox"
+                  checked={contactPermission}
+                  onChange={(e) => setContactPermission(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`w-10 h-6 rounded-full transition-colors ${contactPermission ? 'bg-brand-blue' : 'bg-slate-200'}`} />
+                <div className={`absolute w-4 h-4 bg-white rounded-full shadow transition-transform ${contactPermission ? 'translate-x-2' : '-translate-x-2'}`} />
+              </div>
+              <div className="flex-1">
+                <p className={`font-semibold text-sm flex items-center gap-1.5 ${contactPermission ? 'text-brand-navy' : 'text-slate-700'}`}>
+                  <Phone className="w-4 h-4" />
+                  Allow government to contact me about this issue
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  If checked, the assigned officer may reach out to your registered email for additional details or to confirm resolution. Your data is handled per our privacy policy.
+                </p>
+              </div>
+            </label>
+          </div>
         </section>
 
         <div className="pt-4 border-t border-slate-200 flex justify-end">
