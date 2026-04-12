@@ -9,7 +9,7 @@ const CommunityIssues = () => {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('default');
+  const [sortBy, setSortBy] = useState('all');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -33,6 +33,7 @@ const CommunityIssues = () => {
 
   const filteredIssues = issues.filter(issue => {
     if (filter !== 'all' && issue.status !== filter) return false;
+    if (sortBy !== 'all' && issue.priority !== sortBy) return false;
     if (search && !issue.title.toLowerCase().includes(search.toLowerCase()) &&
         !(issue.description || '').toLowerCase().includes(search.toLowerCase()) &&
         !(issue.address || '').toLowerCase().includes(search.toLowerCase())) return false;
@@ -42,13 +43,7 @@ const CommunityIssues = () => {
   const countByStatus = (status) => issues.filter(i => i.status === status).length;
 
   const sortedAndFilteredIssues = [...filteredIssues].sort((a, b) => {
-    if (sortBy === 'upvotes_desc') return (b.upvotes || 0) - (a.upvotes || 0);
-    if (sortBy === 'recent') return new Date(b.createdAt) - new Date(a.createdAt);
-    if (sortBy === 'priority_desc') {
-        const pLevel = { critical: 4, high: 3, medium: 2, low: 1 };
-        return (pLevel[b.priority] || 0) - (pLevel[a.priority] || 0);
-    }
-    return 0; // default
+    return new Date(b.createdAt) - new Date(a.createdAt); // Default to most recent
   });
 
   return (
@@ -126,10 +121,11 @@ const CommunityIssues = () => {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full sm:w-auto bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue block p-2 outline-none cursor-pointer shadow-sm hover:bg-slate-50 transition-colors"
               >
-                <option value="default">Default Sort</option>
-                <option value="recent">Most Recent</option>
-                <option value="upvotes_desc">Most Upvoted</option>
-                <option value="priority_desc">Highest Priority</option>
+                <option value="all">All Priorities</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
               </select>
             </div>
           </div>
