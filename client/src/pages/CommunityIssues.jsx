@@ -10,6 +10,7 @@ const CommunityIssues = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('default');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchCommunityIssues();
@@ -31,9 +32,14 @@ const CommunityIssues = () => {
   };
 
   const filteredIssues = issues.filter(issue => {
-    if (filter === 'all') return true;
-    return issue.status === filter;
+    if (filter !== 'all' && issue.status !== filter) return false;
+    if (search && !issue.title.toLowerCase().includes(search.toLowerCase()) &&
+        !(issue.description || '').toLowerCase().includes(search.toLowerCase()) &&
+        !(issue.address || '').toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
   });
+
+  const countByStatus = (status) => issues.filter(i => i.status === status).length;
 
   const sortedAndFilteredIssues = [...filteredIssues].sort((a, b) => {
     if (sortBy === 'upvotes_desc') return (b.upvotes || 0) - (a.upvotes || 0);
@@ -48,10 +54,26 @@ const CommunityIssues = () => {
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-brand-navy">Community Issues</h1>
           <p className="text-slate-500 mt-2">See what's happening around your city and upvote issues.</p>
+        </div>
+        {/* Search Bar */}
+        <div className="relative w-full sm:w-72">
+          <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <input
+            type="text"
+            placeholder="Search issues..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          )}
         </div>
       </div>
 
@@ -88,13 +110,13 @@ const CommunityIssues = () => {
                 All ({issues.length})
               </button>
               <button onClick={() => setFilter('reported')} className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${filter === 'reported' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>
-                Reported
+                Reported ({countByStatus('reported')})
               </button>
               <button onClick={() => setFilter('in_progress')} className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${filter === 'in_progress' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>
-                In Progress
+                In Progress ({countByStatus('in_progress')})
               </button>
               <button onClick={() => setFilter('resolved')} className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${filter === 'resolved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>
-                Resolved
+                Resolved ({countByStatus('resolved')})
               </button>
             </div>
             

@@ -22,7 +22,7 @@ const Landing = () => {
         HERO SECTION
         A premium, dynamic banner with geometric/gradient background.
       */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden items-center justify-center flex flex-col min-h-[90vh]">
+      <section className="relative py-16 md:py-20 overflow-hidden items-center justify-center flex flex-col min-h-[calc(100vh-4rem)]">
         {/* Dynamic Background Elements */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
           <div className="absolute -top-[10%] -right-[10%] w-[50%] h-[50%] rounded-full bg-brand-blue/10 blur-3xl animate-float" style={{ animationDuration: '8s' }}></div>

@@ -9,6 +9,7 @@ const MyReports = () => {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchMyIssues();
@@ -30,22 +31,43 @@ const MyReports = () => {
   };
 
   const filteredIssues = issues.filter(issue => {
-    if (filter === 'all') return true;
-    return issue.status === filter;
+    if (filter !== 'all' && issue.status !== filter) return false;
+    if (search && !issue.title.toLowerCase().includes(search.toLowerCase()) &&
+        !(issue.description || '').toLowerCase().includes(search.toLowerCase()) &&
+        !(issue.address || '').toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
   });
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-brand-navy">My Reports</h1>
           <p className="text-slate-500 mt-2">Track the progress of civic issues you've reported.</p>
         </div>
-        <Link to="/report-issue" className="btn-primary inline-flex items-center justify-center shrink-0">
-          <Plus className="w-5 h-5 mr-2" />
-          Report New Issue
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          {/* Search */}
+          <div className="relative w-full sm:w-60">
+            <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <input
+              type="text"
+              placeholder="Search reports..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition-all"
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            )}
+          </div>
+          <Link to="/report-issue" className="btn-primary inline-flex items-center justify-center shrink-0">
+            <Plus className="w-5 h-5 mr-2" />
+            Report New Issue
+          </Link>
+        </div>
       </div>
 
       {loading ? (
